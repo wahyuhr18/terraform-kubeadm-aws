@@ -20,6 +20,7 @@ A **bash runner (`run.sh`)** is included to simplify setup and management.
 
 ## 📂 Project Structure
 
+```bash
 env/
 ├─ dev.tfvars
 ├─ prod.tfvars
@@ -28,7 +29,7 @@ env/
 ├─ variables.tf
 ├─ outputs.tf
 └─ run.sh
-
+```
 > **Modules breakdown**:
 > - **VPC**: Creates VPC, public/private subnets, Internet/NAT gateways  
 > - **Security**: Security Groups for bastion, master, and worker nodes  
@@ -37,6 +38,7 @@ env/
 
 ---
 
+
 ## ⚡ Quick Start
 
 ```bash
@@ -44,8 +46,7 @@ git clone https://github.com/your-username/aws-homelab-kubernetes.git
 cd aws-homelab-kubernetes
 chmod +x run.sh
 ./run.sh
-
-
+```
 Choose auth mode (AWS Profile or Access Keys)
 Select env (dev / prod)
 Pick action: apply, plan, or destroy
@@ -55,8 +56,8 @@ prod apply → Create production infra
 dev destroy → Remove dev cluster
 
 🔮 Next Steps
-Add Ansible to bootstrap Kubernetes with kubeadm
-Extend to staging or test environments
+- Add Ansible to bootstrap Kubernetes with kubeadm
+- Extend to staging or test environments
+- Optionally migrate to EKS later
 
-Optionally migrate to EKS later
 
