@@ -62,8 +62,8 @@ dev destroy → Remove dev cluster
 
 ## 🔮 Next Steps
 - Add Ansible to bootstrap Kubernetes with kubeadm
-- Extend to staging or test environments
 - Optionally migrate to EKS later
+
 
 
 
