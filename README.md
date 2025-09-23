@@ -30,11 +30,11 @@ env/
 ├─ outputs.tf
 └─ run.sh
 ```
-> **Modules breakdown**:
-> - **VPC**: Creates VPC, public/private subnets, Internet/NAT gateways  
-> - **Security**: Security Groups for bastion, master, and worker nodes  
-> - **IAM**: Roles & policies for SSM and EC2 
-> - **Instance**: EC2 instances for bastion, master, and worker nodes  
+**Modules breakdown**:
+- **VPC**: Creates VPC, public/private subnets, Internet/NAT gateways
+- **Security**: Security Groups for bastion, master, and worker nodes  
+- **IAM**: Roles & policies for SSM and EC2 
+- **Instance**: EC2 instances for bastion, master, and worker nodes  
 
 ---
 
@@ -42,8 +42,8 @@ env/
 ## ⚡ Quick Start
 
 ```bash
-git clone https://github.com/your-username/aws-homelab-kubernetes.git
-cd aws-homelab-kubernetes
+https://github.com/wahyuhr18/terraform-kubeadm-aws.git
+cd terraform-kubeadm-aws
 chmod +x run.sh
 ./run.sh
 ```
@@ -59,5 +59,6 @@ dev destroy → Remove dev cluster
 - Add Ansible to bootstrap Kubernetes with kubeadm
 - Extend to staging or test environments
 - Optionally migrate to EKS later
+
 
 
