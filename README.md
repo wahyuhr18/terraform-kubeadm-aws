@@ -21,14 +21,19 @@ A **bash runner (`run.sh`)** is included to simplify setup and management.
 ## 📂 Project Structure
 
 ```bash
-env/
-├─ dev.tfvars
-├─ prod.tfvars
-├─ modules/
-├─ main.tf
-├─ variables.tf
-├─ outputs.tf
-└─ run.sh
+terraform-kubeadm-aws/
+├── env/                  
+│   ├── dev.tfvars        
+│   ├── prod.tfvars       
+│   └── staging.tfvars    
+├── key/                  
+├── modules/                        
+├── main.tf               
+├── outputs.tf            
+├── provider.tf           
+├── run.sh                
+├── terraform.tfvars      
+└── variables.tf          
 ```
 **Modules breakdown**:
 - **VPC**: Creates VPC, public/private subnets, Internet/NAT gateways
@@ -55,10 +60,11 @@ Example:
 prod apply → Create production infra
 dev destroy → Remove dev cluster
 
-🔮 Next Steps
+## 🔮 Next Steps
 - Add Ansible to bootstrap Kubernetes with kubeadm
 - Extend to staging or test environments
 - Optionally migrate to EKS later
+
 
 
 
