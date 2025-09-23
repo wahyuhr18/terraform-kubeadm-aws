@@ -20,18 +20,14 @@ A **bash runner (`run.sh`)** is included to simplify setup and management.
 
 ## 📂 Project Structure
 
-
-.
-├── env/
-│   ├── dev.tfvars
-│   └── prod.tfvars
-├── modules/
-├── main.tf
-├── variables.tf
-├── outputs.tf
-├── run.sh
-└── README.md
-
+env/
+├─ dev.tfvars
+├─ prod.tfvars
+├─ modules/
+├─ main.tf
+├─ variables.tf
+├─ outputs.tf
+└─ run.sh
 
 > **Modules breakdown**:
 > - **VPC**: Creates VPC, public/private subnets, Internet/NAT gateways  
@@ -63,3 +59,4 @@ Add Ansible to bootstrap Kubernetes with kubeadm
 Extend to staging or test environments
 
 Optionally migrate to EKS later
+
