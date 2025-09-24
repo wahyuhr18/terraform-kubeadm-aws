@@ -1,0 +1,16 @@
+---
+- name: Install kubeadm, kubelet, kubectl
+  ansible.builtin.shell: |
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+    apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+    apt-get update && apt-get install -y kubelet kubeadm kubectl
+
+- name: Copy join command from master
+  ansible.builtin.fetch:
+    src: /tmp/kube_join.sh
+    dest: /tmp/kube_join.sh
+    flat: yes
+  delegate_to: "{{ groups['masters'][0] }}"
+
+- name: Run join command
+  ansible.builtin.command: sh /tmp/kube_join.sh

@@ -1,0 +1,32 @@
+---
+- name: Install kubeadm, kubelet, kubectl
+  ansible.builtin.shell: |
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+    apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+    apt-get update && apt-get install -y kubelet kubeadm kubectl
+
+- name: Initialize Kubernetes master
+  ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
+  args:
+    creates: /etc/kubernetes/admin.conf
+
+- name: Setup kube config for root
+  ansible.builtin.shell: |
+    mkdir -p $HOME/.kube
+    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    chown $(id -u):$(id -g) $HOME/.kube/config
+
+- name: Install Flannel CNI
+  ansible.builtin.command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Get join command
+  ansible.builtin.shell: kubeadm token create --print-join-command
+  register: join_cmd
+
+- name: Save join command
+  ansible.builtin.copy:
+    dest: /tmp/kube_join.sh
+    content: "{{ join_cmd.stdout }}"
+    mode: '0755'

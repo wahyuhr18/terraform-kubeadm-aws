@@ -1,0 +1,21 @@
+---
+- name: Setup Kubernetes Cluster
+  hosts: all
+  become: true
+
+  roles:
+    - role: common
+
+- name: Setup Kubernetes Masters
+  hosts: masters
+  become: true
+
+  roles:
+    - role: master
+
+- name: Setup Kubernetes Workers
+  hosts: workers
+  become: true
+
+  roles:
+    - role: worker
