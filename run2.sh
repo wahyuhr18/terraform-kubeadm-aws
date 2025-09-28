@@ -70,37 +70,14 @@ fi
 
 terraform init -upgrade
 terraform $ACTION -var-file="$VAR_FILE" -auto-approve
+echo "✅ Terraform $ACTION completed for environment: $ENV"
+echo
+# Ambil cluster name & region dari terraform output / tfvars
+CLUSTER_NAME=$(terraform output -raw eks_cluster_id)
+REGION=$(terraform output -raw region 2>/dev/null || echo "us-east-1")
 
-# --- Jika apply, lanjut Ansible ---
-if [ "$ACTION" == "apply" ]; then
-  echo
-  echo "📡 Generating Ansible inventory (SSM + trace IP)..."
+echo "[INFO] Updating kubeconfig for cluster: $CLUSTER_NAME in region: $REGION"
+aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" --profile "$PROFILE"
 
-  TF_MASTERS=$(terraform output -json masters)
-  TF_WORKERS=$(terraform output -json workers)
-
-  cat > inventory.ini <<EOF
-[masters]
-$(echo "$TF_MASTERS" | jq -r 'to_entries[] | "\(.key) ansible_host=\(.value.id) trace_private_ip=\(.value.private_ip) trace_public_ip=\(.value.public_ip)"')
-
-[workers]
-$(echo "$TF_WORKERS" | jq -r 'to_entries[] | "\(.key) ansible_host=\(.value.id) trace_private_ip=\(.value.private_ip) trace_public_ip=\(.value.public_ip)"')
-
-[all:vars]
-ansible_connection=community.aws.aws_ssm
-region=${AWS_DEFAULT_REGION}
-EOF
-
-  echo "✅ Inventory created: inventory.ini"
-
-  echo
-  echo "🚀 Running Ansible playbook to configure Kubernetes..."
-  ansible-playbook -i inventory.ini ansible/playbook.yml
-
-  echo
-  echo "🔍 Validating Kubernetes cluster (kubectl get nodes)..."
-  ansible masters -i inventory.ini -a "kubectl get nodes -o wide" \
-    -e KUBECONFIG=/etc/kubernetes/admin.conf
-
-  echo "✅ Kubernetes cluster provisioned successfully!"
-fi
+echo "[INFO] Testing cluster connection..."
+kubectl get nodes

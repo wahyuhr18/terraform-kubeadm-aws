@@ -7,16 +7,10 @@ module "vpc" {
   private_subnets = var.private_subnets
 }
 
-# IAM Role (SSM)
+# IAM (SSM + EKS Cluster Role + Node Role)
 module "iam" {
   source    = "./modules/iam"
-  role_name = "homelab-ssm-role"
-}
-
-# Resource key pair AWS
-resource "aws_key_pair" "homelab" {
-  key_name   = "homelab-key"
-  public_key = file("${path.module}/key/homelab.pub")
+  role_name = var.role_name
 }
 
 # Security Groups
@@ -24,6 +18,12 @@ module "security" {
   source   = "./modules/security"
   vpc_id   = module.vpc.vpc_id
   ssh_cidr = var.ssh_cidr
+}
+
+# Key Pair
+resource "aws_key_pair" "homelab" {
+  key_name   = "${var.role_name}-key"
+  public_key = file("${path.module}/key/homelab.pub")
 }
 
 # Bastion Host
@@ -35,9 +35,8 @@ module "bastion" {
   subnet_id            = module.vpc.public_subnet_ids[0]
   sg_ids               = [module.security.sg_bastion_id]
   iam_instance_profile = module.iam.instance_profile
-  key_name = aws_key_pair.homelab.key_name
+  key_name             = aws_key_pair.homelab.key_name
   associate_public_ip  = true
-  
 
   user_data = <<-EOT
     #!/bin/bash
@@ -45,40 +44,20 @@ module "bastion" {
   EOT
 }
 
-# Master Nodes
-module "masters" {
-  source               = "./modules/instance"
-  count                = var.master_count
-  name_prefix          = "master-${count.index + 1}"
-  ami                  = var.ami
-  instance_type        = var.master_instance_type
-  subnet_id            = element(module.vpc.private_subnet_ids, count.index % length(module.vpc.private_subnet_ids))
-  sg_ids               = [module.security.sg_master_id]
-  iam_instance_profile = module.iam.instance_profile
-  key_name = aws_key_pair.homelab.key_name
+# EKS Cluster + Node Group
+module "eks" {
+  source             = "./modules/eks"
+  cluster_name       = var.cluster_name
+  cluster_role_arn   = module.iam.eks_cluster_role_arn
+  node_role_arn      = module.iam.eks_node_role_arn
+  subnet_ids         = module.vpc.private_subnet_ids
+  sg_ids             = [module.security.sg_master_id]
+  kubernetes_version = var.kubernetes_version
 
-  user_data = <<-EOT
-    #!/bin/bash
-    $(cat ${path.root}/scripts/common.sh)
-    $(cat ${path.root}/scripts/master.sh)
-  EOT
-}
+  instance_types = var.eks_instance_types
+  desired_size   = var.eks_desired_size
+  min_size       = var.eks_min_size
+  max_size       = var.eks_max_size
 
-# Worker Nodes
-module "workers" {
-  source               = "./modules/instance"
-  count                = var.worker_count
-  name_prefix          = "worker-${count.index + 1}"
-  ami                  = var.ami
-  instance_type        = var.worker_instance_type
-  subnet_id            = element(module.vpc.private_subnet_ids, count.index % length(module.vpc.private_subnet_ids))
-  sg_ids               = [module.security.sg_worker_id]
-  iam_instance_profile = module.iam.instance_profile
-  key_name = aws_key_pair.homelab.key_name
-
-  user_data = <<-EOT
-    #!/bin/bash
-    $(cat ${path.root}/scripts/common.sh)
-    $(cat ${path.root}/scripts/worker.sh)
-  EOT
+  depends_on_iam = module.iam
 }

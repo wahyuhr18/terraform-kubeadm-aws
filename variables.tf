@@ -1,38 +1,59 @@
 # AWS Region & Profile
-variable "region" { type = string }
+variable "region" {
+  type        = string
+  description = "AWS region tempat resource dibuat"
+}
+
 variable "profile" {
-  type    = string
-  default = null
+  type        = string
+  default     = null
+  description = "AWS CLI profile name (opsional)"
 }
 
-# VPC CIDR
+# VPC & Networking
 variable "cidr_block" { type = string }
-
-# Multi-AZ setup
-variable "azs" {
-  description = "List of availability zones"
-  type        = list(string)
-}
-
-variable "public_subnets" {
-  description = "List of public subnet CIDRs"
-  type        = list(string)
-}
-
-variable "private_subnets" {
-  description = "List of private subnet CIDRs"
-  type        = list(string)
-}
-
-# SSH Source
+variable "azs" { type = list(string) }
+variable "public_subnets" { type = list(string) }
+variable "private_subnets" { type = list(string) }
 variable "ssh_cidr" { type = string }
 
-# AMI & Instances
+# AMI & Bastion
 variable "ami" { type = string }
 variable "bastion_instance_type" { type = string }
-variable "master_instance_type" { type = string }
-variable "worker_instance_type" { type = string }
 
-# Cluster Size
-variable "master_count" { type = number }
-variable "worker_count" { type = number }
+# IAM & Naming
+variable "role_name" {
+  type    = string
+  default = "homelab"
+}
+
+# EKS Cluster
+variable "cluster_name" {
+  type    = string
+  default = "homelab-eks"
+}
+
+variable "kubernetes_version" {
+  type    = string
+  default = "1.29"
+}
+
+variable "eks_instance_types" {
+  type    = list(string)
+  default = ["t3.medium"]
+}
+
+variable "eks_desired_size" {
+  type    = number
+  default = 2
+}
+
+variable "eks_min_size" {
+  type    = number
+  default = 1
+}
+
+variable "eks_max_size" {
+  type    = number
+  default = 4
+}
