@@ -1,35 +1,47 @@
+# ------------------------
 # VPC
+# ------------------------
 module "vpc" {
   source          = "./modules/vpc"
   cidr_block      = var.cidr_block
   azs             = var.azs
   public_subnets  = var.public_subnets
   private_subnets = var.private_subnets
+
 }
 
+# ------------------------
 # IAM (SSM + EKS Cluster Role + Node Role)
+# ------------------------
 module "iam" {
   source    = "./modules/iam"
-  role_name = var.role_name
+  role_name = "${var.env}-${var.role_name}"
 }
 
+# ------------------------
 # Security Groups
+# ------------------------
 module "security" {
   source   = "./modules/security"
   vpc_id   = module.vpc.vpc_id
   ssh_cidr = var.ssh_cidr
+
 }
 
+# ------------------------
 # Key Pair
+# ------------------------
 resource "aws_key_pair" "homelab" {
-  key_name   = "${var.role_name}-key"
+  key_name   = "${var.env}-${var.role_name}-key"
   public_key = file("${path.module}/key/homelab.pub")
 }
 
+# ------------------------
 # Bastion Host
+# ------------------------
 module "bastion" {
   source               = "./modules/instance"
-  name_prefix          = "bastion"
+  name_prefix          = "${var.env}-bastion"
   ami                  = var.ami
   instance_type        = var.bastion_instance_type
   subnet_id            = module.vpc.public_subnet_ids[0]
@@ -44,10 +56,13 @@ module "bastion" {
   EOT
 }
 
+# ------------------------
 # EKS Cluster + Node Group
+# ------------------------
 module "eks" {
-  source             = "./modules/eks"
-  cluster_name       = var.cluster_name
+  source = "./modules/eks"
+
+  cluster_name       = "${var.env}-${var.cluster_name}"
   cluster_role_arn   = module.iam.eks_cluster_role_arn
   node_role_arn      = module.iam.eks_node_role_arn
   subnet_ids         = module.vpc.private_subnet_ids
@@ -58,6 +73,13 @@ module "eks" {
   desired_size   = var.eks_desired_size
   min_size       = var.eks_min_size
   max_size       = var.eks_max_size
+  ssh_key_name   = aws_key_pair.homelab.key_name
 
-  depends_on_iam = module.iam
+  # pastikan IAM selesai dulu
+  depends_on = [module.iam]
+
+  tags = {
+    Environment = var.env
+    Project     = var.cluster_name
+  }
 }

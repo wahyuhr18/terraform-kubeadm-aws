@@ -5,10 +5,10 @@ echo "==============================="
 echo "  Homelab Terraform + Ansible Runner "
 echo "==============================="
 
-# --- Pilih Mode Auth ---
+# --- Pilih Profile ---
 echo "Authentication mode:"
-echo "1) AWS Profile"
-echo "2) Manual Access Key + Secret Key"
+echo "1) Pilih AWS Profile"
+echo "2) Buat AWS Profile baru"
 read -p "Choice [1/2]: " AUTH_MODE
 
 if [ "$AUTH_MODE" == "1" ]; then
@@ -22,62 +22,68 @@ if [ "$AUTH_MODE" == "1" ]; then
   export AWS_DEFAULT_REGION="$REGION"
 
 elif [ "$AUTH_MODE" == "2" ]; then
-  read -p "Enter AWS Access Key ID: " ACCESS_KEY
-  read -s -p "Enter AWS Secret Access Key: " SECRET_KEY
-  echo
-  read -p "Enter AWS Region [default: ap-southeast-1]: " REGION
-  REGION=${REGION:-ap-southeast-1}
-
-  export AWS_ACCESS_KEY_ID="$ACCESS_KEY"
-  export AWS_SECRET_ACCESS_KEY="$SECRET_KEY"
-  export AWS_DEFAULT_REGION="$REGION"
-
+  read -p "Enter new profile name: " PROFILE
+  aws configure --profile "$PROFILE"
+  echo "✅ Profile '$PROFILE' created. Please rerun the script."
+  exit 0
 else
   echo "❌ Invalid choice!"
   exit 1
 fi
 
-# --- Menu ---
+# --- Pilih Environment ---
 echo
-echo "Select option:"
-echo "1a) prod apply"
-echo "1b) prod destroy"
-echo "1c) prod plan"
-echo "2a) dev apply"
-echo "2b) dev destroy"
-echo "2c) dev plan"
+echo "Select Environment:"
+echo "1) prod"
+echo "2) staging"
+echo "3) dev"
+read -p "Choice [1/2/3]: " ENV_CHOICE
 
-read -p "Choice: " CHOICE
+case $ENV_CHOICE in
+  1) ENV="prod"; VAR_FILE="env/prod/prod.tfvars" ;;
+  2) ENV="staging"; VAR_FILE="env/staging/staging.tfvars" ;;
+  3) ENV="dev"; VAR_FILE="env/dev/dev.tfvars" ;;
+  *) echo "❌ Invalid choice!"; exit 1 ;;
+esac
 
-case $CHOICE in
-  1a) ENV="prod"; VAR_FILE="env/prod.tfvars"; ACTION="apply" ;;
-  1b) ENV="prod"; VAR_FILE="env/prod.tfvars"; ACTION="destroy" ;;
-  1c) ENV="prod"; VAR_FILE="env/prod.tfvars"; ACTION="plan" ;;
-  2a) ENV="dev"; VAR_FILE="env/dev.tfvars"; ACTION="apply" ;;
-  2b) ENV="dev"; VAR_FILE="env/dev.tfvars"; ACTION="destroy" ;;
-  2c) ENV="dev"; VAR_FILE="env/dev.tfvars"; ACTION="plan" ;;
-  *)  echo "❌ Invalid choice! Use: 1a | 1b | 1c | 2a | 2b | 2c"; exit 1 ;;
+# --- Pilih Action ---
+echo
+echo "Select Action:"
+echo "1) apply"
+echo "2) destroy"
+echo "3) plan"
+read -p "Choice [1/2/3]: " ACTION_CHOICE
+
+case $ACTION_CHOICE in
+  1) ACTION="apply" ;;
+  2) ACTION="destroy" ;;
+  3) ACTION="plan" ;;
+  *) echo "❌ Invalid choice!"; exit 1 ;;
+esac
+
+# --- Set Backend Config ---
+case $ENV in
+  prod) BACKEND_FILE="env/prod/backend.tf" ;;
+  staging) BACKEND_FILE="env/staging/backend.tf" ;;
+  dev) BACKEND_FILE="env/dev/dev-backend.tf" ;;
 esac
 
 # --- Eksekusi Terraform ---
 echo
 echo "🚀 Running Terraform [$ACTION] for environment: $ENV"
-if [ "$AUTH_MODE" == "1" ]; then
-  echo "👉 Using Profile: $AWS_PROFILE | Region: $AWS_DEFAULT_REGION"
-else
-  echo "👉 Using AccessKey: $AWS_ACCESS_KEY_ID | Region: $AWS_DEFAULT_REGION"
-fi
+echo "👉 Using Profile: $AWS_PROFILE | Region: $AWS_DEFAULT_REGION"
 
-terraform init -upgrade
-terraform $ACTION -var-file="$VAR_FILE" -auto-approve
+terraform init -upgrade -backend-config="$BACKEND_FILE"
+terraform $ACTION -var-file="$VAR_FILE" -var="profile=$AWS_PROFILE" -auto-approve
 echo "✅ Terraform $ACTION completed for environment: $ENV"
 echo
-# Ambil cluster name & region dari terraform output / tfvars
+
+# --- Update kubeconfig ---
 CLUSTER_NAME=$(terraform output -raw eks_cluster_id)
-REGION=$(terraform output -raw region 2>/dev/null || echo "us-east-1")
+REGION=$(terraform output -raw region 2>/dev/null || echo "$AWS_DEFAULT_REGION")
 
 echo "[INFO] Updating kubeconfig for cluster: $CLUSTER_NAME in region: $REGION"
-aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" --profile "$PROFILE"
+aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION" --profile "$AWS_PROFILE"
 
 echo "[INFO] Testing cluster connection..."
 kubectl get nodes
