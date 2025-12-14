@@ -1,0 +1,10 @@
+#Install dengan file values
+
+helm install haproxy-ingress haproxy-ingress/haproxy-ingress \
+  --namespace ingress-controller \
+  --create-namespace \
+  -f haproxy-values.yaml
+
+kubectl apply -f nginx.yaml
+kubectl get deploy,svc -o wide
+

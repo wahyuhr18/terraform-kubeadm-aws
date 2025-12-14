@@ -1,95 +1,98 @@
 variable "cluster_name" {
+  description = "EKS cluster name"
   type        = string
-  description = "Nama EKS cluster"
 }
 
 variable "cluster_role_arn" {
+  description = "ARN of IAM role for EKS control plane"
   type        = string
-  description = "IAM Role ARN untuk EKS Cluster"
 }
 
 variable "node_role_arn" {
+  description = "ARN of IAM role for EKS node group"
   type        = string
-  description = "IAM Role ARN untuk EKS Node Group"
 }
 
 variable "subnet_ids" {
+  description = "List of private subnet IDs for cluster"
   type        = list(string)
-  description = "Subnet IDs untuk EKS Cluster & Node Group"
 }
 
-variable "sg_ids" {
+variable "cluster_sg_ids" {
+  description = "Security Groups for EKS control plane"
   type        = list(string)
-  description = "Security Group IDs untuk EKS Cluster & Node Group"
+  default     = []
+}
+
+variable "node_sg_ids" {
+  description = "Security Groups for EKS node group (used for SSH/remote access)"
+  type        = list(string)
+  default     = []
 }
 
 variable "kubernetes_version" {
+  description = "Kubernetes version"
   type        = string
-  default     = "1.29"
-  description = "Versi Kubernetes untuk EKS"
-}
-
-variable "enabled_cluster_log_types" {
-  type        = list(string)
-  default     = ["api", "audit", "authenticator"]
-  description = "Log types yang diaktifkan untuk EKS"
 }
 
 variable "instance_types" {
+  description = "Instance types for node group"
   type        = list(string)
-  default     = ["t3.medium"]
-  description = "Instance types untuk worker nodes"
-}
-
-variable "ami_type" {
-  type        = string
-  default     = "AL2_x86_64"
-  description = "AMI type untuk EKS worker nodes"
 }
 
 variable "desired_size" {
+  description = "Desired node count"
   type        = number
-  default     = 2
-  description = "Desired worker node count"
 }
 
 variable "min_size" {
+  description = "Minimum node count"
   type        = number
-  default     = 1
-  description = "Minimum worker node count"
 }
 
 variable "max_size" {
+  description = "Maximum node count"
   type        = number
-  default     = 4
-  description = "Maximum worker node count"
 }
 
 variable "ssh_key_name" {
+  description = "EC2 SSH key name for node SSH (optional)"
   type        = string
-  description = "Nama SSH key untuk remote access ke worker nodes"
+  default     = null
+}
+
+variable "enable_monitoring" {
+  description = "Enable CloudWatch logging for cluster"
+  type        = bool
+  default     = false
 }
 
 variable "endpoint_private_access" {
+  description = "Enable private endpoint for EKS API"
   type        = bool
   default     = false
-  description = "Apakah private access untuk EKS endpoint diaktifkan"
 }
 
 variable "endpoint_public_access" {
+  description = "Enable public endpoint for EKS API"
   type        = bool
   default     = true
-  description = "Apakah public access untuk EKS endpoint diaktifkan"
 }
 
 variable "public_access_cidrs" {
+  description = "CIDRs allowed to access public EKS endpoint"
   type        = list(string)
   default     = ["0.0.0.0/0"]
-  description = "CIDR block yang boleh akses ke EKS endpoint publik"
+}
+
+variable "enabled_cluster_log_types" {
+  description = "Control plane log types to enable"
+  type        = list(string)
+  default     = ["api", "audit", "authenticator"]
 }
 
 variable "tags" {
+  description = "Tags map"
   type        = map(string)
   default     = {}
-  description = "Tags tambahan"
 }

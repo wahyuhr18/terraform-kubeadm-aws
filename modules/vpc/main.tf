@@ -1,8 +1,12 @@
+# -----------------------------
+# VPC
+# -----------------------------
 resource "aws_vpc" "homelab" {
   cidr_block = var.cidr_block
 
   tags = {
-    Name = "homelab-vpc"
+    Name        = "${var.env}-homelab-vpc"
+    Environment = var.env
   }
 }
 
@@ -18,7 +22,8 @@ resource "aws_subnet" "public" {
   availability_zone       = var.azs[tonumber(each.key)]
 
   tags = {
-    Name = "homelab-public-${each.key}"
+    Name        = "${var.env}-homelab-public-${each.key}"
+    Environment = var.env
   }
 }
 
@@ -34,7 +39,8 @@ resource "aws_subnet" "private" {
   availability_zone       = var.azs[tonumber(each.key)]
 
   tags = {
-    Name = "homelab-private-${each.key}"
+    Name        = "${var.env}-homelab-private-${each.key}"
+    Environment = var.env
   }
 }
 
@@ -45,12 +51,25 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.homelab.id
 
   tags = {
-    Name = "homelab-igw"
+    Name        = "${var.env}-homelab-igw"
+    Environment = var.env
   }
 }
 
 # -----------------------------
-# NAT Gateway (Single)
+# Elastic IP untuk NAT Gateway
+# -----------------------------
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name        = "${var.env}-homelab-nat-eip"
+    Environment = var.env
+  }
+}
+
+# -----------------------------
+# NAT Gateway
 # -----------------------------
 resource "aws_nat_gateway" "natgw" {
   allocation_id = aws_eip.nat.id
@@ -58,16 +77,8 @@ resource "aws_nat_gateway" "natgw" {
   depends_on    = [aws_internet_gateway.igw]
 
   tags = {
-    Name = "homelab-natgw"
-  }
-}
-
-# Elastic IP untuk NAT Gateway (baru dibuat otomatis)
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name = "homelab-nat-eip"
+    Name        = "${var.env}-homelab-natgw"
+    Environment = var.env
   }
 }
 
@@ -83,7 +94,8 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-    Name = "homelab-public-rt"
+    Name        = "${var.env}-homelab-public-rt"
+    Environment = var.env
   }
 }
 
@@ -105,7 +117,8 @@ resource "aws_route_table" "private_rt" {
   }
 
   tags = {
-    Name = "homelab-private-rt"
+    Name        = "${var.env}-homelab-private-rt"
+    Environment = var.env
   }
 }
 

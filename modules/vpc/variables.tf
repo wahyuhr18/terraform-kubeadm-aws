@@ -17,3 +17,8 @@ variable "private_subnets" {
   description = "List of private subnet CIDRs"
   type        = list(string)
 }
+
+variable "env" {
+  type        = string
+  description = "Environment name (contoh: dev, staging, prod)"
+}

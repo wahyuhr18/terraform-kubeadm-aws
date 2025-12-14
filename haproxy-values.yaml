@@ -1,0 +1,44 @@
+controller:
+  # IngressClass settings
+  ingressClass: haproxy
+  ingressClassResource:
+    enabled: true
+    name: haproxy
+
+  # Service exposure (AWS NLB)
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    externalTrafficPolicy: Cluster
+
+  # Replica HA
+  replicaCount: 2
+
+  # Resource requests & limits (tuning untuk HAProxy Pod)
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Node scheduling (hindari Pod numpuk di satu node)
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - haproxy-ingress
+          topologyKey: "kubernetes.io/hostname"
+
+# Default backend (untuk request tanpa match)
+defaultBackend:
+  enabled: true

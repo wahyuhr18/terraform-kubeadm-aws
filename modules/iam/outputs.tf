@@ -1,5 +1,11 @@
-output "instance_profile" {
-  value = aws_iam_instance_profile.ssm_profile.name
+output "bastion_role_arn" {
+  description = "ARN of the Bastion IAM Role (Full Admin)"
+  value       = aws_iam_role.bastion_role.arn
+}
+
+output "bastion_instance_profile" {
+  description = "Instance profile name for Bastion"
+  value       = aws_iam_instance_profile.bastion_profile.name
 }
 
 output "eks_cluster_role_arn" {

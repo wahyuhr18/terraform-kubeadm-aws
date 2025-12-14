@@ -1,18 +1,25 @@
+# modules/eks/outputs.tf
+output "cluster_id" {
+  description = "EKS Cluster ARN"
+  value       = aws_eks_cluster.this.id
+}
+
 output "cluster_name" {
+  description = "Nama cluster EKS"
   value       = aws_eks_cluster.this.name
-  description = "Nama EKS Cluster"
 }
 
 output "cluster_endpoint" {
+  description = "Endpoint API server dari EKS"
   value       = aws_eks_cluster.this.endpoint
-  description = "EKS Cluster API Server endpoint"
 }
 
-output "cluster_ca" {
-  value       = aws_eks_cluster.this.certificate_authority[0].data
-  description = "Certificate authority data untuk kubeconfig"
+output "cluster_version" {
+  description = "Versi Kubernetes"
+  value       = aws_eks_cluster.this.version
 }
 
-output "cluster_id" {
-  value = aws_eks_cluster.this.id
+output "nodegroup_name" {
+  description = "Nama node group yang dibuat"
+  value       = aws_eks_node_group.this.node_group_name
 }

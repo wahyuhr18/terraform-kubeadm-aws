@@ -1,25 +1,37 @@
-# SSM Role
-resource "aws_iam_role" "ssm_role" {
-  name = var.role_name
+# Role hanya untuk EC2
+resource "aws_iam_role" "bastion_role" {
+  name = "${var.role_name}-bastion-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action    = "sts:AssumeRole"
-    }]
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
   })
 }
 
+# policy Session Manager
 resource "aws_iam_role_policy_attachment" "ssm_attach" {
-  role       = aws_iam_role.ssm_role.name
+  role       = aws_iam_role.bastion_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-resource "aws_iam_instance_profile" "ssm_profile" {
-  name = "${var.role_name}-profile"
-  role = aws_iam_role.ssm_role.name
+# full admin Access
+resource "aws_iam_role_policy_attachment" "admin_attach" {
+  role       = aws_iam_role.bastion_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# instance profile EC2
+resource "aws_iam_instance_profile" "bastion_profile" {
+  name = "homelab-bastion-profile"
+  role = aws_iam_role.bastion_role.name
 }
 
 # EKS Cluster Role

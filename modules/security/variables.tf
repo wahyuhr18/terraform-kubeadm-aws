@@ -1,8 +1,20 @@
 variable "vpc_id" {
-  type = string
+  description = "VPC ID"
+  type        = string
 }
 
 variable "ssh_cidr" {
-  type = string
-  description = "Allowed CIDR for bastion SSH access"
+  description = "Allowed CIDR list for SSH access"
+  type        = list(string)
+}
+
+variable "env" {
+  description = "Environment"
+  type        = string
+}
+
+variable "tags" {
+  description = "Map of tags"
+  type        = map(string)
+  default     = {}
 }

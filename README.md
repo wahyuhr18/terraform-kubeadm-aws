@@ -102,4 +102,4 @@ Examples:
 ./run.sh → select staging → plan
 
 🔮 Next Steps
-fix bug
+testing eks `

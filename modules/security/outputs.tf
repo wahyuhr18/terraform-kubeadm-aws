@@ -1,11 +1,14 @@
 output "sg_bastion_id" {
-  value = aws_security_group.bastion.id
+  description = "Security Group ID for Bastion Host"
+  value       = aws_security_group.bastion.id
 }
 
-output "sg_master_id" {
-  value = aws_security_group.k8s_master.id
+output "sg_controlplane_id" {
+  description = "Security Group ID for EKS Control Plane"
+  value       = aws_security_group.eks_controlplane.id
 }
 
-output "sg_worker_id" {
-  value = aws_security_group.k8s_worker.id
+output "sg_nodegroup_id" {
+  description = "Security Group ID for EKS Node Group"
+  value       = aws_security_group.eks_nodegroup.id
 }

@@ -1,7 +1,9 @@
-# Bastion SG (SSH from internet)
+# ------------------------
+# Bastion Security Group
+# ------------------------
 resource "aws_security_group" "bastion" {
-  name        = "bastion_sg"
-  description = "Bastion Security Group"
+  name        = "${var.env}-bastion-sg"
+  description = "Allow SSH access to Bastion host"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -9,7 +11,7 @@ resource "aws_security_group" "bastion" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    cidr_blocks = var.ssh_cidr
   }
 
   egress {
@@ -19,31 +21,29 @@ resource "aws_security_group" "bastion" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "bastion_sg"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.env}-bastion-sg"
+      Role = "bastion"
+    }
+  )
 }
 
-# Master SG
-resource "aws_security_group" "k8s_master" {
-  name        = "k8s_master_sg"
-  description = "Kubernetes Master Security Group"
+# ------------------------
+# EKS Control Plane SG
+# ------------------------
+resource "aws_security_group" "eks_controlplane" {
+  name        = "${var.env}-eks-controlplane-sg"
+  description = "EKS Control Plane Security Group"
   vpc_id      = var.vpc_id
 
-  # SSH from Bastion
   ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
-  }
-
-  # Allow all traffic inside master SG (ETCD, Kubelet, etc.)
-  ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    self      = true
+    description = "Kubernetes API access (Bastion/Admin)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = var.ssh_cidr
   }
 
   egress {
@@ -53,31 +53,45 @@ resource "aws_security_group" "k8s_master" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "k8s_master_sg"
-  }
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.env}-eks-controlplane-sg"
+      Role = "controlplane"
+    }
+  )
 }
 
-# Worker SG
-resource "aws_security_group" "k8s_worker" {
-  name        = "k8s_worker_sg"
-  description = "Kubernetes Worker Security Group"
+# ------------------------
+# EKS Node Group SG
+# ------------------------
+resource "aws_security_group" "eks_nodegroup" {
+  name        = "${var.env}-eks-nodegroup-sg"
+  description = "EKS Node Group Security Group"
   vpc_id      = var.vpc_id
 
-  # SSH from Bastion
   ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.bastion.id]
+    description              = "Traffic from Control Plane"
+    from_port                = 0
+    to_port                  = 0
+    protocol                 = "-1"
+    security_groups          = [aws_security_group.eks_controlplane.id]
   }
 
-  # Allow all traffic inside worker SG
   ingress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
-    self      = true
+    description = "Node-to-node communication"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self        = true
+  }
+
+  ingress {
+    description      = "SSH from Bastion host"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.bastion.id]
   }
 
   egress {
@@ -87,75 +101,11 @@ resource "aws_security_group" "k8s_worker" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "k8s_worker_sg"
-  }
-}
-
-# --- Cross-SG rules ---
-
-# K8s API (Master → Worker)
-resource "aws_security_group_rule" "api_master_to_worker" {
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_worker.id
-  source_security_group_id  = aws_security_group.k8s_master.id
-  description              = "K8s API access from master to worker"
-}
-
-# WeaveNet (Master ↔ Worker)
-resource "aws_security_group_rule" "weavenet_master_to_worker" {
-  type                     = "ingress"
-  from_port                = 6783
-  to_port                  = 6784
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_master.id
-  source_security_group_id  = aws_security_group.k8s_worker.id
-  description              = "WeaveNet traffic from worker to master"
-}
-
-# NodePort services (Master → Worker)
-resource "aws_security_group_rule" "nodeport_master_to_worker" {
-  type                     = "ingress"
-  from_port                = 30000
-  to_port                  = 32767
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_worker.id
-  source_security_group_id  = aws_security_group.k8s_master.id
-  description              = "NodePort services from master to worker"
-}
-
-# Kubelet / Control Plane (Master intra-cluster)
-resource "aws_security_group_rule" "kubelet_master" {
-  type                     = "ingress"
-  from_port                = 10248
-  to_port                  = 10260
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_master.id
-  source_security_group_id  = aws_security_group.k8s_master.id
-  description              = "Kubelet & Control Plane intra-master"
-}
-
-# Kubelet / Node communication (Worker intra-cluster)
-resource "aws_security_group_rule" "kubelet_worker" {
-  type                     = "ingress"
-  from_port                = 10248
-  to_port                  = 10260
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_worker.id
-  source_security_group_id  = aws_security_group.k8s_worker.id
-  description              = "Kubelet & Node intra-worker"
-}
-
-# ETCD (Master intra-cluster)
-resource "aws_security_group_rule" "etcd_master" {
-  type                     = "ingress"
-  from_port                = 2379
-  to_port                  = 2380
-  protocol                 = "tcp"
-  security_group_id         = aws_security_group.k8s_master.id
-  source_security_group_id  = aws_security_group.k8s_master.id
-  description              = "ETCD intra-master"
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.env}-eks-nodegroup-sg"
+      Role = "nodegroup"
+    }
+  )
 }

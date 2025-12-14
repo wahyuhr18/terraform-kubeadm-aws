@@ -1,11 +1,15 @@
 output "vpc_id" {
-  value = aws_vpc.homelab.id
+  description = "VPC ID dari homelab"
+  value       = aws_vpc.homelab.id
 }
 
+# Subnet Outputs
 output "public_subnet_ids" {
-  value = values(aws_subnet.public)[*].id
+  description = "List ID dari public subnet"
+  value       = [for subnet in values(aws_subnet.public) : subnet.id]
 }
 
 output "private_subnet_ids" {
-  value = values(aws_subnet.private)[*].id
+  description = "List ID dari private subnet"
+  value       = [for subnet in values(aws_subnet.private) : subnet.id]
 }
